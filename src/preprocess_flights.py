@@ -56,20 +56,31 @@ class DataPreprocessor(TransformerMixin):  # inheritance
 
 
     def outlier_analysis_multi_vars(self, df, feature_list):
+        """
+        The function first reduces dimensionality to handle multiple features efficiently,
+        then identifies and removes outliers based on the LOF scores.
+
+        Parameters:
+            df (pandas.DataFrame): The input data frame.
+            feature_list (list): A list of continuous feature names to be processed.
+
+        Returns:
+            pandas.DataFrame: The data frame with outliers deleted.
+        """
         df_continuous = df[feature_list]
         percentile = 0.03
 
         pca = PCA(n_components=5)
         reduced_df = pca.fit_transform(df_continuous)
 
-        clf = LocalOutlierFactor(n_neighbors=20, contamination=0.1)
+        clf = LocalOutlierFactor(n_neighbors=20, contamination=0.1, n_jobs=-1)
         clf.fit_predict(reduced_df)
 
         df_scores = clf.negative_outlier_factor_
         threshold = np.percentile(df_scores, percentile*100)
         non_outliers = df_scores > threshold
         filtered_df = df[non_outliers]
-
+        print(f'Toplam Veri: {len(df)}, Aykırı Olmayan Veri: {len(filtered_df)}')
         return filtered_df
         
 
@@ -80,6 +91,26 @@ class DataPreprocessor(TransformerMixin):  # inheritance
         """
         df.dropna(inplace=True)
         return df
+    
+    def fast_process(self, df, feature_list):
+        print("Starting fast processing...")
+        print("Analyzing single outlier variables...")
+        self.outlier_analysis_single_var(df, feature_list)
+        print("Processed as single outlier analysis. (%30)")
+
+        print("Analyzing multi outlier variables...")
+        self.outlier_analysis_multi_vars(df, feature_list)
+        print("Processed as multi outlier analysis. (%60)")
+
+        print("Deleting missing values...")
+        self.missing_value_analysis(df)
+        print("Fast processing completed! Dataset Preprocessed (%100)")
+        return df 
         
 
-        
+        # kategorik veri analizi (one-hot, label encoding)
+        # (tail_number için Frequency Encoding veya Target Encoding)
+        # (Airline Label EncodingLineer veya One-Hot Encoding)
+        # Veri Özeti Fonksiyonu: Kategorik ve sayısal değişkenlerin özet istatistiklerini tek bir tabloda gösteren fonksiyon.
+        # scale fonksiyonu
+        # pipelines
